@@ -71,7 +71,8 @@ pub const TAU: f64 = PI * 2.0;
 
 impl Plugin for Solar1 {
     fn new(_host: HostCallback) -> Self {
-        SimpleLogger::new().init().expect("create SimpleLogger");
+        // It might be already initialized; if so we don't care.
+        let _ = SimpleLogger::new().init();
 
         // let log_path = dirs::home_dir()
         //     .unwrap_or(".".into())
