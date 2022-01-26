@@ -4,6 +4,10 @@
 //!
 //! Based on the vst-rs `sine_synth` example and inspired by the Solar 50.
 
+use std::cell::Cell;
+use std::f64::consts::PI;
+use std::sync::{Arc, Mutex};
+
 use log::*;
 use simple_logger::SimpleLogger;
 
@@ -11,8 +15,6 @@ use vst::api::{Events, Supported};
 use vst::buffer::AudioBuffer;
 use vst::event::Event;
 use vst::plugin::{CanDo, Category, HostCallback, Info, Plugin};
-
-use std::f64::consts::PI;
 
 mod adsr;
 use adsr::{AdsrEnvelope, AdsrParams};
@@ -40,6 +42,7 @@ struct Solar1 {
     time: f64,
     note: Option<MidiNote>,
     envelope: AdsrEnvelope,
+    parameters: Arc<Params>,
 }
 
 impl Solar1 {
@@ -99,6 +102,7 @@ impl Plugin for Solar1 {
             time: 0.0,
             note: None,
             envelope,
+            parameters: Arc::new(Params::default()),
         }
     }
 
@@ -110,7 +114,7 @@ impl Plugin for Solar1 {
             category: Category::Synth,
             inputs: 2,
             outputs: 2,
-            parameters: 0,
+            parameters: 1,
             initial_delay: 0,
             ..Info::default()
         }
@@ -137,6 +141,7 @@ impl Plugin for Solar1 {
         let output_count = outputs.len();
         let per_sample = self.time_per_sample();
         let mut output_sample;
+        let osc1_ratio = self.parameters.osc1_ratio.lock().unwrap().get();
         for sample_idx in 0..samples {
             let time = self.time;
             if let Some(current_note) = &self.note {
@@ -144,7 +149,7 @@ impl Plugin for Solar1 {
                 let cycle_len = 1.0 / current_note.frequency();
                 let signal = (time % cycle_len) / cycle_len - 0.5;
 
-                let cycle2_len = cycle_len * 1.3;
+                let cycle2_len = cycle_len * (0.5 + osc1_ratio as f64);
                 let signal2 = (time % cycle2_len) / cycle2_len - 0.5;
 
                 let signal = signal * 0.8 + signal2 * 0.4;
@@ -172,6 +177,38 @@ impl Plugin for Solar1 {
         match can_do {
             CanDo::ReceiveMidiEvent => Supported::Yes,
             _ => Supported::Maybe,
+        }
+    }
+
+    fn get_parameter_object(&mut self) -> Arc<dyn vst::plugin::PluginParameters> {
+        self.parameters.clone()
+    }
+}
+
+#[derive(Default, Debug)]
+struct Params {
+    osc1_ratio: Mutex<Cell<f32>>, // 0.5 plus this ratio
+}
+
+impl vst::plugin::PluginParameters for Params {
+    fn get_parameter_name(&self, index: i32) -> String {
+        match index {
+            0 => "Osc 1 Tune".into(),
+            _ => format!("Param {index}"),
+        }
+    }
+
+    fn get_parameter(&self, index: i32) -> f32 {
+        match index {
+            0 => self.osc1_ratio.lock().unwrap().get(),
+            _ => 0.0,
+        }
+    }
+
+    fn set_parameter(&self, index: i32, value: f32) {
+        match index {
+            0 => self.osc1_ratio.lock().unwrap().set(value),
+            _ => (),
         }
     }
 }
