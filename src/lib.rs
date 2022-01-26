@@ -77,11 +77,11 @@ impl Plugin for Solar1 {
     fn new(_host: HostCallback) -> Self {
         let _ = SimpleLogger::new().init(); // It might be already initialized; we don't care.
 
-        let adsr_params = adsr::AdsrParams {
+        let adsr_params = AdsrParams {
             attack_s: 0.2,
-            decay_s: 1.0,
-            sustain_level: 0.8,
-            release_s: 2.0,
+            decay_s: 0.5,
+            sustain_level: 0.5,
+            release_s: 1.0,
         };
         let envelope = adsr::AdsrEnvelope::new(adsr_params);
 

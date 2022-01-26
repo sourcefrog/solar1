@@ -8,10 +8,18 @@ pub struct AdsrParams {
 
 #[derive(Debug)]
 enum AdsrEnvelopeState {
-    Attack { attack_start: f64 },
-    Decay { decay_start: f64 },
+    Attack {
+        attack_start: f64,
+    },
+    Decay {
+        decay_start: f64,
+    },
     Sustain,
-    Release { release_start: f64 },
+    Release {
+        start: f64,
+        /// Initial level from which the release begins
+        level: f64,
+    },
     Silent,
 }
 use AdsrEnvelopeState::*;
@@ -37,7 +45,8 @@ impl AdsrEnvelope {
         match &self.state {
             Attack { .. } | Decay { .. } | Sustain => {
                 self.state = Release {
-                    release_start: time,
+                    start: time,
+                    level: self.sample(time),
                 }
             }
             Silent | Release { .. } => (),
@@ -74,12 +83,18 @@ impl AdsrEnvelope {
                         return alpha;
                     }
                 }
-                Release { release_start } => {
-                    let reltime = time - release_start;
-                    if reltime < 0.0 || reltime > self.params.release_s {
+                Release { start, level } => {
+                    let reltime = time - start;
+                    if reltime < 0.0 {
+                        return *level;
+                    }
+                    let alpha = level - (reltime / self.params.release_s);
+                    if alpha <= 0.0 {
                         self.state = Silent;
+                        return 0.0;
                     } else {
-                        return self.params.sustain_level * (1.0 - reltime / self.params.release_s);
+                        assert!(alpha <= 1.0);
+                        return alpha;
                     }
                 }
             }
