@@ -4,9 +4,6 @@
 //!
 //! Based on the vst-rs `sine_synth` example and inspired by the Solar 50.
 
-use std::fs::File;
-use std::io::Write;
-
 use log::*;
 use simple_logger::SimpleLogger;
 
