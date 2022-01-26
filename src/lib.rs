@@ -67,18 +67,16 @@ impl Solar1 {
         self.note = Some(note)
     }
 
-    fn note_off(&mut self, note: u8) {
+    fn note_off(&mut self, _note: u8) {
         self.envelope.release(self.time);
-        if self.note == Some(note) {
-            self.note = None
-        }
+        // Don't forget the note;let it ring out.
     }
 }
 
 impl Plugin for Solar1 {
     fn new(_host: HostCallback) -> Self {
-        // It might be already initialized; if so we don't care.
-        let _ = SimpleLogger::new().init();
+        let _ = SimpleLogger::new().init(); // It might be already initialized; we don't care.
+
         let adsr_params = adsr::AdsrParams {
             attack_s: 0.2,
             decay_s: 1.0,
