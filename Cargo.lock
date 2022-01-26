@@ -307,7 +307,6 @@ checksum = "8ccb82d61f80a663efe1f787a51b16b5a51e3314d6ac365b08639f52387b33f3"
 [[package]]
 name = "vst"
 version = "0.2.1"
-source = "git+https://github.com/rustaudio/vst-rs#b5f342c67535071f65824d1b4a056d378ca03548"
 dependencies = [
  "bitflags",
  "libc",

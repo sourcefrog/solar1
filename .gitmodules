@@ -1,0 +1,3 @@
+[submodule "vst-rs"]
+	path = vst-rs
+	url = git@github.com:sourcefrog/vst-rs.git
