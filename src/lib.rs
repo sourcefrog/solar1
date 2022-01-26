@@ -33,7 +33,6 @@ fn midi_pitch_to_freq(pitch: u8) -> f64 {
 struct Solar1 {
     sample_rate: f64,
     time: f64,
-    note_duration: f64,
     note: Option<u8>,
     envelope: AdsrEnvelope,
 }
@@ -62,7 +61,6 @@ impl Solar1 {
     }
 
     fn note_on(&mut self, note: u8) {
-        self.note_duration = 0.0;
         self.envelope.trigger(self.time);
         self.note = Some(note)
     }
@@ -88,7 +86,6 @@ impl Plugin for Solar1 {
         info!("Solar1 created!");
         Solar1 {
             sample_rate: 44100.0,
-            note_duration: 0.0,
             time: 0.0,
             note: None,
             envelope,
@@ -150,9 +147,7 @@ impl Plugin for Solar1 {
                 output_sample = (signal * alpha) as f32;
 
                 self.time += per_sample;
-                self.note_duration += per_sample;
             } else {
-                // TODO: Decay the previously-played note, again so that it doesn't click.
                 output_sample = 0.0;
             }
             // Output this value in unison across probably two stereo output channels.
