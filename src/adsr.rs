@@ -67,7 +67,11 @@ impl AdsrEnvelope {
                     if reltime > self.params.decay_s || reltime < 0.0 {
                         self.state = Sustain;
                     } else {
-                        return reltime / self.params.decay_s;
+                        let alpha = 1.0
+                            - (reltime / self.params.decay_s) * (1.0 - self.params.sustain_level);
+                        assert!(alpha >= 0.0);
+                        assert!(alpha <= 1.0);
+                        return alpha;
                     }
                 }
                 Release { release_start } => {
@@ -75,7 +79,7 @@ impl AdsrEnvelope {
                     if reltime < 0.0 || reltime > self.params.release_s {
                         self.state = Silent;
                     } else {
-                        return reltime / self.params.release_s;
+                        return self.params.sustain_level * (1.0 - reltime / self.params.release_s);
                     }
                 }
             }
