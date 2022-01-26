@@ -19,21 +19,26 @@ use adsr::{AdsrEnvelope, AdsrParams};
 
 pub const TAU: f64 = PI * 2.0;
 
-/// Convert the midi note's pitch into the equivalent frequency.
-///
-/// This function assumes A4 is 440hz.
-fn midi_pitch_to_freq(pitch: u8) -> f64 {
-    const A4_PITCH: i8 = 69;
-    const A4_FREQ: f64 = 440.0;
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MidiNote(u8);
 
-    // Midi notes can be 0-127
-    ((f64::from(pitch as i8 - A4_PITCH)) / 12.).exp2() * A4_FREQ
+impl MidiNote {
+    /// Convert the midi note's pitch into the equivalent frequency.
+    ///
+    /// This function assumes A4 is 440hz.
+    pub fn frequency(&self) -> f64 {
+        const A4_PITCH: i8 = 69;
+        const A4_FREQ: f64 = 440.0;
+
+        // Midi notes can be 0-127
+        ((f64::from(self.0 as i8 - A4_PITCH)) / 12.).exp2() * A4_FREQ
+    }
 }
 
 struct Solar1 {
     sample_rate: f64,
     time: f64,
-    note: Option<u8>,
+    note: Option<MidiNote>,
     envelope: AdsrEnvelope,
 }
 
@@ -54,25 +59,25 @@ impl Solar1 {
     /// [source]: http://www.midimountain.com/midi/midi_status.htm
     fn process_midi_event(&mut self, data: [u8; 3]) {
         match data[0] {
-            128 => self.note_off(data[1]),
-            144 => self.note_on(data[1]),
+            128 => self.note_off(MidiNote(data[1])),
+            144 => self.note_on(MidiNote(data[1])),
             _ => (),
         }
     }
 
-    fn note_on(&mut self, note: u8) {
-        info!("note_on {note}");
+    fn note_on(&mut self, note: MidiNote) {
+        // info!("note_on {note:?}");
         self.envelope.trigger(self.time);
         self.note = Some(note)
     }
 
-    fn note_off(&mut self, note: u8) {
-        info!("note_off {note}");
+    fn note_off(&mut self, note: MidiNote) {
+        // info!("note_off {note:?}");
         if self.note == Some(note) {
             // This was the most recently played note?
             self.envelope.release(self.time);
         }
-        // Don't forget the note;let it ring out.
+        // Don't forget the note; let it ring out.
     }
 }
 
@@ -134,15 +139,15 @@ impl Plugin for Solar1 {
         let mut output_sample;
         for sample_idx in 0..samples {
             let time = self.time;
-            if let Some(current_note) = self.note {
-                // What position are we at in this cycle? time %
-                let cycle_len = 1.0 / midi_pitch_to_freq(current_note);
+            if let Some(current_note) = &self.note {
+                // What position are we at in this cycle?
+                let cycle_len = 1.0 / current_note.frequency();
                 let signal = (time % cycle_len) / cycle_len - 0.5;
 
-                let cycle2_len = cycle_len * 1.618;
+                let cycle2_len = cycle_len * 1.3;
                 let signal2 = (time % cycle2_len) / cycle2_len - 0.5;
 
-                let signal = signal * 0.8 + signal2 * 0.2;
+                let signal = signal * 0.8 + signal2 * 0.4;
 
                 // let phase = (time % cycle_len) / cycle_len;
                 // let signal = if phase < 0.5 { -1.0 } else { 1.0 };
