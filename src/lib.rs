@@ -1,4 +1,14 @@
-// based on the vst-rs sine_synth example
+// Copyright 2022 Martin Pool
+
+//! Solar1 experimental drone sawtooth synth.
+//!
+//! Based on the vst-rs `sine_synth` example and inspired by the Solar 50.
+
+use std::fs::File;
+use std::io::Write;
+
+use log::*;
+use simple_logger::SimpleLogger;
 
 use vst::api::{Events, Supported};
 use vst::buffer::AudioBuffer;
@@ -18,14 +28,14 @@ fn midi_pitch_to_freq(pitch: u8) -> f64 {
     ((f64::from(pitch as i8 - A4_PITCH)) / 12.).exp2() * A4_FREQ
 }
 
-struct SineSynth {
+struct Solar1 {
     sample_rate: f64,
     time: f64,
     note_duration: f64,
     note: Option<u8>,
 }
 
-impl SineSynth {
+impl Solar1 {
     fn time_per_sample(&self) -> f64 {
         1.0 / self.sample_rate
     }
@@ -62,9 +72,22 @@ impl SineSynth {
 
 pub const TAU: f64 = PI * 2.0;
 
-impl Plugin for SineSynth {
+impl Plugin for Solar1 {
     fn new(_host: HostCallback) -> Self {
-        SineSynth {
+        SimpleLogger::new().init().expect("create SimpleLogger");
+
+        // let log_path = dirs::home_dir()
+        //     .unwrap_or(".".into())
+        //     .join("solar1_vst.log");
+        // let mut log_file: Box<dyn Write + Send + Sync> = File::options()
+        //     .append(true)
+        //     .create(true)
+        //     .open(&log_path)
+        //     .map(|f| Box::new(f) as Box<dyn Write + Send + Sync>)
+        //     .unwrap_or_else(|_| Box::new(std::io::sink()));
+        // let _ = writeln!(log_file, "Solar1 created!");
+        info!("Solar1 created!");
+        Solar1 {
             sample_rate: 44100.0,
             note_duration: 0.0,
             time: 0.0,
@@ -155,4 +178,4 @@ impl Plugin for SineSynth {
     }
 }
 
-vst::plugin_main!(SineSynth);
+vst::plugin_main!(Solar1);
