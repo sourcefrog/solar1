@@ -61,12 +61,17 @@ impl Solar1 {
     }
 
     fn note_on(&mut self, note: u8) {
+        info!("note_on {note}");
         self.envelope.trigger(self.time);
         self.note = Some(note)
     }
 
-    fn note_off(&mut self, _note: u8) {
-        self.envelope.release(self.time);
+    fn note_off(&mut self, note: u8) {
+        info!("note_off {note}");
+        if self.note == Some(note) {
+            // This was the most recently played note?
+            self.envelope.release(self.time);
+        }
         // Don't forget the note;let it ring out.
     }
 }
