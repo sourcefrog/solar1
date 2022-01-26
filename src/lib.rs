@@ -14,6 +14,11 @@ use vst::plugin::{CanDo, Category, HostCallback, Info, Plugin};
 
 use std::f64::consts::PI;
 
+mod adsr;
+use adsr::{AdsrEnvelope, AdsrParams};
+
+pub const TAU: f64 = PI * 2.0;
+
 /// Convert the midi note's pitch into the equivalent frequency.
 ///
 /// This function assumes A4 is 440hz.
@@ -30,6 +35,7 @@ struct Solar1 {
     time: f64,
     note_duration: f64,
     note: Option<u8>,
+    envelope: AdsrEnvelope,
 }
 
 impl Solar1 {
@@ -57,39 +63,37 @@ impl Solar1 {
 
     fn note_on(&mut self, note: u8) {
         self.note_duration = 0.0;
+        self.envelope.trigger(self.time);
         self.note = Some(note)
     }
 
     fn note_off(&mut self, note: u8) {
+        self.envelope.release(self.time);
         if self.note == Some(note) {
             self.note = None
         }
     }
 }
 
-pub const TAU: f64 = PI * 2.0;
-
 impl Plugin for Solar1 {
     fn new(_host: HostCallback) -> Self {
         // It might be already initialized; if so we don't care.
         let _ = SimpleLogger::new().init();
+        let adsr_params = adsr::AdsrParams {
+            attack_s: 0.2,
+            decay_s: 1.0,
+            sustain_level: 0.8,
+            release_s: 2.0,
+        };
+        let envelope = adsr::AdsrEnvelope::new(adsr_params);
 
-        // let log_path = dirs::home_dir()
-        //     .unwrap_or(".".into())
-        //     .join("solar1_vst.log");
-        // let mut log_file: Box<dyn Write + Send + Sync> = File::options()
-        //     .append(true)
-        //     .create(true)
-        //     .open(&log_path)
-        //     .map(|f| Box::new(f) as Box<dyn Write + Send + Sync>)
-        //     .unwrap_or_else(|_| Box::new(std::io::sink()));
-        // let _ = writeln!(log_file, "Solar1 created!");
         info!("Solar1 created!");
         Solar1 {
             sample_rate: 44100.0,
             note_duration: 0.0,
             time: 0.0,
             note: None,
+            envelope,
         }
     }
 
@@ -130,7 +134,6 @@ impl Plugin for Solar1 {
         let mut output_sample;
         for sample_idx in 0..samples {
             let time = self.time;
-            let note_duration = self.note_duration;
             if let Some(current_note) = self.note {
                 // What position are we at in this cycle? time %
                 let cycle_len = 1.0 / midi_pitch_to_freq(current_note);
@@ -144,13 +147,7 @@ impl Plugin for Solar1 {
                 // let phase = (time % cycle_len) / cycle_len;
                 // let signal = if phase < 0.5 { -1.0 } else { 1.0 };
 
-                // Apply a quick envelope to the attack of the signal to avoid popping.
-                let attack = 0.5;
-                let alpha = if note_duration < attack {
-                    note_duration / attack
-                } else {
-                    1.0
-                };
+                let alpha = self.envelope.sample(time);
 
                 output_sample = (signal * alpha) as f32;
 
