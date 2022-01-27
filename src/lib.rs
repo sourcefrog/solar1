@@ -127,21 +127,20 @@ impl Plugin for Solar1 {
         let output_count = outputs.len();
         let per_sample = self.time_per_sample();
         let mut output_sample;
-        let osc1_ratio = self.parameters.osc1_freq_mul();
         for sample_idx in 0..samples {
             let time = self.time;
             if let Some(current_note) = &self.note {
+                let base_freq = current_note.frequency();
                 // What position are we at in this cycle?
-                let cycle_len = 1.0 / current_note.frequency();
-                let signal = (time % cycle_len) / cycle_len - 0.5;
+                let signal0 = (time * base_freq) % 1.0 - 0.5;
 
-                let cycle2_len = 1.0 / (current_note.frequency() * (0.5 + osc1_ratio as f64));
-                let signal2 = (time % cycle2_len) / cycle2_len - 0.5;
+                let signal1 = (time * base_freq * self.parameters.osc1_freq_mul()) % 1.0 - 0.5;
 
-                let signal = signal * 0.8 + signal2 * 0.4;
+                let signal2 = (time * base_freq * self.parameters.osc2_freq_mul()) % 1.0 - 0.5;
 
-                // let phase = (time % cycle_len) / cycle_len;
-                // let signal = if phase < 0.5 { -1.0 } else { 1.0 };
+                let signal = signal0
+                    + signal1 * self.parameters.osc1_level()
+                    + signal2 * self.parameters.osc2_level();
 
                 let alpha = self.envelope.sample(time);
 

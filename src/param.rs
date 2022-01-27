@@ -11,8 +11,11 @@ const DECAY: usize = 1;
 const SUSTAIN: usize = 2;
 const RELEASE: usize = 3;
 const OSC1_TUNE: usize = 4;
+const OSC1_LEVEL: usize = 5;
+const OSC2_TUNE: usize = 6;
+const OSC2_LEVEL: usize = 7;
 
-const N_PARAM: usize = 6;
+const N_PARAM: usize = 8;
 
 // Scaling factors from the [0..1] range to the semantic range.
 const RELEASE_SCALE: f32 = 10.0;
@@ -24,6 +27,8 @@ const PARAM_NAMES: [&'static str; N_PARAM] = [
     "Release",
     "Osc1 Tune",
     "Osc1 Level",
+    "Osc2 Tune",
+    "Osc2 Level",
 ];
 
 /// Plugin parameters: these map into knobs or sliders in the DAW.
@@ -40,8 +45,20 @@ impl Params {
     }
 
     /// Return the frequency multiplier for osc1.
-    pub fn osc1_freq_mul(&self) -> f32 {
-        frequency_multiplier(self.copy_params()[OSC1_TUNE])
+    pub fn osc1_freq_mul(&self) -> f64 {
+        frequency_multiplier(self.copy_params()[OSC1_TUNE]) as f64
+    }
+
+    pub fn osc1_level(&self) -> f64 {
+        self.copy_params()[OSC1_LEVEL] as f64
+    }
+
+    pub fn osc2_freq_mul(&self) -> f64 {
+        frequency_multiplier(self.copy_params()[OSC2_TUNE]) as f64
+    }
+
+    pub fn osc2_level(&self) -> f64 {
+        self.copy_params()[OSC2_LEVEL] as f64
     }
 
     /// Return global ADSR parameters.
@@ -62,7 +79,7 @@ impl Params {
 
 impl Default for Params {
     fn default() -> Params {
-        let p = [0.3, 0.3, 0.8, 0.1, 0.56, 0.0];
+        let p = [0.3, 0.3, 0.8, 0.1, 0.56, 0.5, 0.43, 0.5];
         Params {
             p: Mutex::new(Cell::new(p)),
         }
