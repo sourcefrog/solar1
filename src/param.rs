@@ -195,8 +195,17 @@ impl PluginParameters for Params {
 
     fn get_parameter_text(&self, index: i32) -> String {
         let pval = self.get_parameter(index);
-        let yval = PARAMS[index as usize].curve.scale(pval);
-        format!("{:.3}", yval)
+        let def = &PARAMS[index as usize];
+        let yval = def.curve.scale(pval);
+        let show_sign = match def.curve {
+            Curve::Linear(a, _b) if a < 0.0 => true,
+            _ => false,
+        };
+        if show_sign {
+            format!("{:+.3}", yval)
+        } else {
+            format!("{:.3}", yval)
+        }
     }
 
     fn get_parameter_label(&self, index: i32) -> String {
