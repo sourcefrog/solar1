@@ -20,15 +20,55 @@ const N_PARAM: usize = 8;
 // Scaling factors from the [0..1] range to the semantic range.
 const RELEASE_SCALE: f32 = 10.0;
 
-const PARAM_NAMES: [&'static str; N_PARAM] = [
-    "Attack",
-    "Decay",
-    "Sustain",
-    "Release",
-    "Osc1 Tune",
-    "Osc1 Level",
-    "Osc2 Tune",
-    "Osc2 Level",
+/// A static definition of a single parameter.
+struct ParamDef {
+    name: &'static str,
+    label: &'static str,
+    default: f32,
+}
+
+/// All the defined parameters, with indexes matching the constants above.
+const PARAMS: [ParamDef; N_PARAM] = [
+    ParamDef {
+        name: "Attack",
+        label: "s",
+        default: 0.3,
+    },
+    ParamDef {
+        name: "Decay",
+        label: "s",
+        default: 0.3,
+    },
+    ParamDef {
+        name: "Sustain",
+        label: "",
+        default: 0.8,
+    },
+    ParamDef {
+        name: "Release",
+        label: "s",
+        default: 0.1,
+    },
+    ParamDef {
+        name: "Osc1 Tune",
+        label: "",
+        default: 0.56,
+    },
+    ParamDef {
+        name: "Osc1 Level",
+        label: "",
+        default: 0.5,
+    },
+    ParamDef {
+        name: "Osc2 Tune",
+        label: "",
+        default: 0.43,
+    },
+    ParamDef {
+        name: "Osc2 Level",
+        label: "",
+        default: 0.5,
+    },
 ];
 
 /// Plugin parameters: these map into knobs or sliders in the DAW.
@@ -79,7 +119,10 @@ impl Params {
 
 impl Default for Params {
     fn default() -> Params {
-        let p = [0.3, 0.3, 0.8, 0.1, 0.56, 0.5, 0.43, 0.5];
+        let mut p = [0.0; N_PARAM];
+        for (i, def) in PARAMS.iter().enumerate() {
+            p[i] = def.default;
+        }
         Params {
             p: Mutex::new(Cell::new(p)),
         }
@@ -92,13 +135,6 @@ fn frequency_multiplier(a: f32) -> f32 {
 }
 
 impl PluginParameters for Params {
-    fn get_parameter_name(&self, index: i32) -> String {
-        PARAM_NAMES
-            .get(index as usize)
-            .map(|&s| s.into())
-            .unwrap_or_else(|| format!("Param {index}"))
-    }
-
     fn get_parameter(&self, index: i32) -> f32 {
         // This copies out all the parameters, which is OK and avoids locking.
         let p = self.copy_params();
@@ -112,6 +148,10 @@ impl PluginParameters for Params {
         plock.set(pcopy);
     }
 
+    fn get_parameter_name(&self, index: i32) -> String {
+        PARAMS[index as usize].name.to_owned()
+    }
+
     fn get_parameter_text(&self, index: i32) -> String {
         let pval = self.get_parameter(index);
         match index as usize {
@@ -121,10 +161,6 @@ impl PluginParameters for Params {
     }
 
     fn get_parameter_label(&self, index: i32) -> String {
-        match index as usize {
-            ATTACK | DECAY | RELEASE => "s",
-            _ => "",
-        }
-        .into()
+        PARAMS[index as usize].label.to_owned()
     }
 }
