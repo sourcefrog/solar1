@@ -18,10 +18,16 @@ impl Params {
         N_PARAM
     }
 
-    pub fn osc1_ratio(&self) -> f32 {
+    /// Return the frequency multiplier for osc1.
+    pub fn osc1_freq_mul(&self) -> f32 {
         // TODO: Scale this so that 0.0 is half the frequency and 1.0 is double?
-        self.get_parameter(0)
+        frequency_multiplier(self.get_parameter(0))
     }
+}
+
+/// Scale a parameter in the range 0 to 1, to a frequency multiplier between 0.5 and 2.0.
+fn frequency_multiplier(a: f32) -> f32 {
+    (a * 2.0 - 1.0).exp2()
 }
 
 impl PluginParameters for Params {

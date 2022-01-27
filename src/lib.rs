@@ -101,7 +101,7 @@ impl Plugin for Solar1 {
             vendor: "Martin Pool".to_string(),
             unique_id: 484940,
             category: Category::Synth,
-            inputs: 0,
+            inputs: 0, // No audio inputs
             outputs: 2,
             parameters: Params::len() as i32,
             initial_delay: 0,
@@ -130,7 +130,7 @@ impl Plugin for Solar1 {
         let output_count = outputs.len();
         let per_sample = self.time_per_sample();
         let mut output_sample;
-        let osc1_ratio = self.parameters.osc1_ratio();
+        let osc1_ratio = self.parameters.osc1_freq_mul();
         for sample_idx in 0..samples {
             let time = self.time;
             if let Some(current_note) = &self.note {
