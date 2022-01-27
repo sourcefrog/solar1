@@ -4,9 +4,12 @@
 //!
 //! Based on the vst-rs `sine_synth` example and inspired by the Solar 50.
 
-use std::cell::Cell;
+mod adsr;
+mod midi;
+mod param;
+
 use std::f64::consts::PI;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use log::*;
 use simple_logger::SimpleLogger;
@@ -16,10 +19,9 @@ use vst::buffer::AudioBuffer;
 use vst::event::Event;
 use vst::plugin::{CanDo, Category, HostCallback, Info, Plugin};
 
-mod adsr;
-use adsr::{AdsrEnvelope, AdsrParams};
-mod midi;
-use midi::MidiNote;
+use crate::adsr::{AdsrEnvelope, AdsrParams};
+use crate::midi::MidiNote;
+use crate::param::Params;
 
 pub const TAU: f64 = PI * 2.0;
 
@@ -56,6 +58,7 @@ impl Solar1 {
 
     fn note_on(&mut self, note: MidiNote) {
         // info!("note_on {note:?}");
+        // TODO: Keep a set of active notes and play with polyphony.
         self.envelope.trigger(self.time);
         self.note = Some(note)
     }
@@ -100,7 +103,7 @@ impl Plugin for Solar1 {
             category: Category::Synth,
             inputs: 2,
             outputs: 2,
-            parameters: 1,
+            parameters: Params::len() as i32,
             initial_delay: 0,
             ..Info::default()
         }
@@ -127,7 +130,7 @@ impl Plugin for Solar1 {
         let output_count = outputs.len();
         let per_sample = self.time_per_sample();
         let mut output_sample;
-        let osc1_ratio = self.parameters.osc1_ratio.lock().unwrap().get();
+        let osc1_ratio = self.parameters.osc1_ratio();
         for sample_idx in 0..samples {
             let time = self.time;
             if let Some(current_note) = &self.note {
@@ -135,7 +138,7 @@ impl Plugin for Solar1 {
                 let cycle_len = 1.0 / current_note.frequency();
                 let signal = (time % cycle_len) / cycle_len - 0.5;
 
-                let cycle2_len = cycle_len * (0.5 + osc1_ratio as f64);
+                let cycle2_len = 1.0 / (current_note.frequency() * (0.5 + osc1_ratio as f64));
                 let signal2 = (time % cycle2_len) / cycle2_len - 0.5;
 
                 let signal = signal * 0.8 + signal2 * 0.4;
@@ -168,34 +171,6 @@ impl Plugin for Solar1 {
 
     fn get_parameter_object(&mut self) -> Arc<dyn vst::plugin::PluginParameters> {
         self.parameters.clone()
-    }
-}
-
-#[derive(Default, Debug)]
-struct Params {
-    osc1_ratio: Mutex<Cell<f32>>, // 0.5 plus this ratio
-}
-
-impl vst::plugin::PluginParameters for Params {
-    fn get_parameter_name(&self, index: i32) -> String {
-        match index {
-            0 => "Osc 1 Tune".into(),
-            _ => format!("Param {index}"),
-        }
-    }
-
-    fn get_parameter(&self, index: i32) -> f32 {
-        match index {
-            0 => self.osc1_ratio.lock().unwrap().get(),
-            _ => 0.0,
-        }
-    }
-
-    fn set_parameter(&self, index: i32, value: f32) {
-        match index {
-            0 => self.osc1_ratio.lock().unwrap().set(value),
-            _ => (),
-        }
     }
 }
 
