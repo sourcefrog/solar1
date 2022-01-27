@@ -101,7 +101,7 @@ impl Plugin for Solar1 {
             vendor: "Martin Pool".to_string(),
             unique_id: 484940,
             category: Category::Synth,
-            inputs: 2,
+            inputs: 0,
             outputs: 2,
             parameters: Params::len() as i32,
             initial_delay: 0,
