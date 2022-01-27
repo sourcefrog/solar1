@@ -92,8 +92,9 @@ impl AdsrEnvelope {
                     if alpha <= 0.0 {
                         self.state = Silent;
                         return 0.0;
+                    } else if alpha > 1.0 {
+                        return 1.0;
                     } else {
-                        assert!(alpha <= 1.0);
                         return alpha;
                     }
                 }

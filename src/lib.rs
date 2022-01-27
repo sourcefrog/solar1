@@ -57,8 +57,10 @@ impl Solar1 {
     }
 
     fn note_on(&mut self, note: MidiNote) {
-        // info!("note_on {note:?}");
         // TODO: Keep a set of active notes and play with polyphony.
+        let adsr_params = self.parameters.adsr();
+        info!("note_on {note:?} {adsr_params:?}");
+        self.envelope = adsr::AdsrEnvelope::new(adsr_params);
         self.envelope.trigger(self.time);
         self.note = Some(note)
     }
@@ -77,13 +79,8 @@ impl Plugin for Solar1 {
     fn new(_host: HostCallback) -> Self {
         let _ = SimpleLogger::new().init(); // It might be already initialized; we don't care.
 
-        let adsr_params = AdsrParams {
-            attack_s: 0.2,
-            decay_s: 0.5,
-            sustain_level: 0.5,
-            release_s: 1.0,
-        };
-        let envelope = adsr::AdsrEnvelope::new(adsr_params);
+        let parameters = Params::default();
+        let envelope = adsr::AdsrEnvelope::new(parameters.adsr());
 
         info!("Solar1 created!");
         Solar1 {
@@ -91,7 +88,7 @@ impl Plugin for Solar1 {
             time: 0.0,
             note: None,
             envelope,
-            parameters: Arc::new(Params::default()),
+            parameters: Arc::new(parameters),
         }
     }
 
